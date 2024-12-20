@@ -176,15 +176,14 @@ class LCDManager {
     void displayMatchFinishedWin(int number){
       clear();
       displayMessage("You won!!", 0, 0);
-      displayMessage(number, 0, 1);
+      displayNumber(number, 0, 1);
       displayMessage("credits", 4, 1);
     }
 
     void displayMatchFinishedLost(int number){
       clear();
-      displayMessage("You lost :(", 0, 0);
-      //Serial.println(number);
-      //displayMessage(number, 0, 1);
+      //displayMessage("You lost :(", 0, 0);
+      displayNumber(number, 0, 1);
       //displayMessage("credits", 4, 1);
     }
 
@@ -384,9 +383,15 @@ class GameManager {
       }
       newBets[betCount].number = number;
       newBets[betCount].amount = amount;
+
       delete[] bets;
       bets = newBets;
       betCount++;
+      Serial.println(betCount);
+      for (byte i = 0; i<betCount; i++) {
+        Serial.println(bets[i].amount);
+        Serial.println(bets[i].number);
+      }
     }
 
     void refreshScreen() {
@@ -419,10 +424,11 @@ class GameManager {
           lcdManager.displayBetFinished();
           break;
         case 8:
-          lcdManager.displayMatchFinishedWin(bets[betCount].amount);
+          lcdManager.displayMatchFinishedWin(bets[0].amount);  //bets[betCount].amount   //need debug here
           break;
         case 9:
-          lcdManager.displayMatchFinishedLost(bets[betCount].amount);
+          lcdManager.displayMatchFinishedLost(bets[0].amount);   //bets[betCount].amount
+          
           break;
         default:
           break;
@@ -478,6 +484,9 @@ class GameManager {
       if (pageIndexActive == 6 && key == '2') {
         pageManager(7);
         addBet(tempBetNum, tempBetAmount);
+        betFinished = true;
+        tempBetNum = -1;
+        tempBetAmount = -1;
       }
       
 
@@ -495,15 +504,12 @@ class GameManager {
     }
 
     void checkIfBetFinished() {
-      if (betCount > 0) {
-        betFinished = true;
-      }
+      return  betFinished == true;
     }
 
     void startWheelIfNeeded() {
       checkIfBetFinished();
       bool dealerTouchInput = digitalRead(touchSensorPin);
-      //Serial.println("")
       if (dealerTouchInput == HIGH && !wheelManager.isWheelRunning() && wheelManager.isWheelReady() && betFinished) {
         wheelManager.runWheel();
       }
@@ -522,14 +528,13 @@ class GameManager {
     }
 
     void checkWinLost() {
-      Serial.println(bets[0].amount);
       while (wheelManager.getWheelFinished()) {
         if (keypadManager.getKey() || digitalRead(resetButtonPin) == HIGH) {
           break;
         }
         else {
           //ADD A FOR LOOP TO LOOP THRU THE BETS AND SUBTRACT ADD ACCORINGLY
-          if (bets[0].number == wheelManager.getStopNumber())
+          if (bets[betCount].number == wheelManager.getStopNumber())
           {
             if (!creditModified) {
               creditManager.addCredits(bets[0].amount); 
